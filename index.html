@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Total War: Warhammer III - Tournament Bracket Master</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Cinzel & Inter for Warhammer Medieval Vibe -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0c10;
+            user-select: none;
+            color: #c5c6c7;
+        }
+
+        h1, h2, h3, .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Custom Scrollbar */
+        .bracket-scroll::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .bracket-scroll::-webkit-scrollbar-track {
+            background: #0f1016;
+            border-radius: 8px;
+        }
+        .bracket-scroll::-webkit-scrollbar-thumb {
+            background: #c5a880;
+            border-radius: 8px;
+        }
+        .bracket-scroll::-webkit-scrollbar-thumb:hover {
+            background: #e6c594;
+        }
+
+        /* Warhammer Chaos / Imperial Grid Pattern */
+        .bg-grid-pattern {
+            background-image: radial-gradient(rgba(197, 168, 128, 0.12) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        /* Glowing animations for dynamic SVG lines */
+        @keyframes lineGlow {
+            0%, 100% { stroke-opacity: 0.85; stroke-width: 3.5px; }
+            50% { stroke-opacity: 1; stroke-width: 4.5px; }
+        }
+        
+        .line-active {
+            animation: lineGlow 2.5s infinite ease-in-out;
+            filter: drop-shadow(0px 0px 6px rgba(212, 175, 55, 0.7));
+        }
+
+        .line-champion {
+            animation: lineGlow 1.8s infinite ease-in-out;
+            filter: drop-shadow(0px 0px 10px rgba(239, 68, 68, 0.9));
+        }
+
+        /* Panning Canvas Styles */
+        .pan-viewport {
+            cursor: grab;
+        }
+        .pan-viewport:active {
+            cursor: grabbing;
+        }
+
+        /* Warhammer Metallic Borders & Shadows */
+        .warhammer-panel {
+            background: linear-gradient(135deg, #12141c 0%, #090a0f 100%);
+            border: 2px solid #2a2e3d;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(197, 168, 128, 0.05);
+        }
+
+        .warhammer-button {
+            background: linear-gradient(180deg, #b8860b 0%, #8b6508 100%);
+            border: 1px solid #ffd700;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            box-shadow: 0 4px 12px rgba(184, 134, 11, 0.3);
+        }
+        .warhammer-button:hover {
+            background: linear-gradient(180deg, #d4af37 0%, #a07812 100%);
+            box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5);
+        }
+
+        /* Print optimization */
+        @media print {
+            header, aside, .no-print, #viewControls {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#0b0c10] text-slate-200 min-h-screen flex flex-col selection:bg-amber-600 selection:text-white bg-grid-pattern overflow-x-hidden">
+
+    <!-- Header Navigation -->
+    <header class="bg-[#12141c]/90 border-b-2 border-[#2a2e3d] px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 backdrop-blur-md sticky top-0 z-40 shadow-2xl">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-700 via-amber-600 to-yellow-600 flex items-center justify-center shadow-lg shadow-amber-900/50 border border-amber-400/40">
+                <i class="fa-solid fa-chess-rook text-amber-100 text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black text-amber-500 tracking-wider font-cinzel flex items-center gap-2 drop-shadow">
+                    TOTAL WAR: WARHAMMER III <span class="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2.5 py-0.5 rounded-md border border-amber-500/40 font-sans">GRAND TOURNAMENT</span>
+                </h1>
+                <p class="text-xs text-slate-400 font-medium">Custom Sequential Custom Bracket Master (Custom Sequential System)</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 no-print">
+            <button onclick="shuffleFactions()" class="px-3.5 py-2 bg-[#1a1d29] hover:bg-[#252938] text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition-all flex items-center gap-2 shadow-sm font-cinzel">
+                <i class="fa-solid fa-shuffle text-amber-400"></i> Shuffle Armies
+            </button>
+            <button onclick="resetTournament()" class="px-3.5 py-2 bg-[#1a1d29] hover:bg-[#252938] text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition-all flex items-center gap-2 shadow-sm font-cinzel">
+                <i class="fa-solid fa-rotate text-amber-400"></i> Reset Battle
+            </button>
+            <button onclick="window.print()" class="px-4 py-2 warhammer-button text-xs font-bold rounded-xl transition-all flex items-center gap-2 font-cinzel">
+                <i class="fa-solid fa-scroll"></i> Print / Save Scroll
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow flex flex-col lg:flex-row p-4 sm:p-6 gap-6 max-w-[1920px] w-full mx-auto">
+        
+        <!-- Left Sidebar: Configuration & Unit Inputs -->
+        <aside class="w-full lg:w-80 flex-shrink-0 warhammer-panel rounded-2xl p-5 shadow-2xl h-fit backdrop-blur-xl z-20">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-amber-400 mb-4 flex items-center gap-2 font-cinzel border-b border-slate-800 pb-2">
+                <i class="fa-solid fa-helmet-battle text-amber-500"></i> Campaign Settings
+            </h2>
+
+            <!-- Number of Participants Slider -->
+            <div class="mb-5 bg-[#07080b] p-3.5 rounded-xl border border-slate-800">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-cinzel">Participant Lords</label>
+                    <span id="sliderValueText" class="text-xs font-black text-amber-400 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-md">9 Lords</span>
+                </div>
+                <input type="range" id="teamSlider" min="2" max="32" step="1" value="9" oninput="handleSliderInput(this.value)" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                <div class="flex justify-between text-[10px] text-slate-500 font-bold mt-1 px-0.5">
+                    <span>2</span>
+                    <span>8</span>
+                    <span>16</span>
+                    <span>24</span>
+                    <span>32</span>
+                </div>
+            </div>
+
+            <!-- Progress Tracker -->
+            <div class="mb-5 bg-[#07080b] p-3 rounded-xl border border-slate-800">
+                <div class="flex justify-between items-center text-xs font-semibold mb-1.5 font-cinzel">
+                    <span class="text-slate-400">Battle Progress</span>
+                    <span id="progressText" class="text-amber-400 font-bold">0 / 8</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                    <div id="progressBar" class="bg-gradient-to-r from-amber-600 to-yellow-400 h-2 rounded-full transition-all duration-300 w-0"></div>
+                </div>
+            </div>
+
+            <!-- Faction List Inputs -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-cinzel">Armies & Upkeep Cost</label>
+                    <button onclick="autoFillFactions()" class="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 font-cinzel">
+                        <i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i> Auto-fill
+                    </button>
+                </div>
+                <div id="teamInputContainer" class="space-y-2 max-h-[360px] overflow-y-auto pr-1 bracket-scroll">
+                    <!-- Dynamic Team Inputs rendered via renderTeamInputs() -->
+                </div>
+            </div>
+            
+            <button onclick="generateBracket()" class="w-full mt-5 warhammer-button font-bold py-2.5 rounded-xl transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-2 font-cinzel">
+                <i class="fa-solid fa-arrows-rotate"></i> Remake Tournament Bracket
+            </button>
+        </aside>
+
+        <!-- Right Area: Interactive Zoomable / Pannable Bracket Viewer -->
+        <section class="flex-grow warhammer-panel rounded-2xl p-6 shadow-2xl flex flex-col min-h-[750px] overflow-hidden relative backdrop-blur-xl">
+            
+            <!-- Bracket Header Info -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 mb-2 border-b border-slate-800 gap-3 z-30">
+                <div>
+                    <h2 id="displayTournamentTitle" class="text-2xl font-black text-amber-400 tracking-tight font-cinzel flex items-center gap-2">
+                        <i class="fa-solid fa-crown text-amber-500"></i> The Great Cathay & Chaos Clash 2026
+                    </h2>
+                    <p id="tournamentInfo" class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                        <span class="flex items-center gap-1"><i class="fa-solid fa-diagram-next text-amber-400"></i> Custom Sequential Ladder System</span>
+                        <span>•</span>
+                        <span class="text-amber-400 font-bold"><span id="displayTeamCount">9</span> Lords Enrolled</span>
+                        <span>•</span>
+                        <span class="text-slate-500 text-[10px]"><i class="fa-solid fa-hand-pointer"></i> Drag to Pan & Scroll to Zoom</span>
+                    </p>
+                </div>
+                
+                <!-- Winner Banner Preview -->
+                <div id="championBanner" class="hidden items-center gap-3 bg-amber-500/10 border border-amber-500/40 px-4 py-2 rounded-2xl shadow-lg animate-pulse">
+                    <div class="p-2 bg-amber-500/20 rounded-xl text-amber-400 border border-amber-500/40">
+                        <i class="fa-solid fa-trophy text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-[9px] uppercase font-black text-amber-400 tracking-wider font-cinzel">SUPREME OVERLORD</div>
+                        <div id="championName" class="text-sm font-black text-white font-cinzel">Lord Name</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View Canvas Floating Controls -->
+            <div id="viewControls" class="absolute bottom-6 right-6 z-40 flex items-center gap-1.5 bg-[#12141c]/95 backdrop-blur-md border border-[#2a2e3d] p-2 rounded-2xl shadow-2xl">
+                <button onclick="zoomBracket(0.15)" title="Zoom In" class="w-9 h-9 rounded-xl bg-[#1a1d29] hover:bg-[#252938] text-slate-200 text-xs font-bold transition-all flex items-center justify-center border border-slate-700">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+                <button onclick="zoomBracket(-0.15)" title="Zoom Out" class="w-9 h-9 rounded-xl bg-[#1a1d29] hover:bg-[#252938] text-slate-200 text-xs font-bold transition-all flex items-center justify-center border border-slate-700">
+                    <i class="fa-solid fa-minus"></i>
+                </button>
+                <button onclick="fitWindow()" title="Fit Window" class="px-3 h-9 rounded-xl warhammer-button text-xs font-semibold transition-all flex items-center justify-center gap-1.5 font-cinzel">
+                    <i class="fa-solid fa-compress text-[10px]"></i> Fit Window
+                </button>
+            </div>
+
+            <!-- Bracket Canvas Area -->
+            <div id="bracketViewport" class="flex-grow relative overflow-hidden pan-viewport w-full h-full flex items-center justify-center rounded-xl bg-[#06070a]/60 border border-slate-900">
+                
+                <div id="panContainer" class="absolute flex flex-col items-center justify-center transform-gpu transition-transform duration-75 origin-center p-16 min-w-max min-h-max">
+                    
+                    <svg id="bracketSvg" class="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-visible">
+                    </svg>
+
+                    <div id="bracketTree" class="flex flex-col-reverse gap-20 items-center justify-center relative z-20 py-8 px-12 min-w-max">
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Hidden File Input for Faction Portrait Image Upload -->
+    <input type="file" id="portraitUploader" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+
+    <!-- Custom Dialog Modal for Editing Match Cost -->
+    <div id="scoreModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+        <div class="warhammer-panel border-2 border-amber-500/40 rounded-2xl p-6 max-w-sm w-full shadow-2xl transform scale-95 transition-transform duration-200" id="modalCard">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
+                <h3 class="text-base font-bold text-amber-400 flex items-center gap-2 font-cinzel">
+                    <i class="fa-solid fa-coins text-amber-400"></i> Set Army Gold Upkeep
+                </h3>
+                <button onclick="closeScoreModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="space-y-3 mb-6">
+                <div class="flex items-center justify-between bg-[#07080b] p-3 rounded-xl border border-slate-800">
+                    <span id="modalTeam1Name" class="text-xs font-bold text-white truncate max-w-[170px] font-cinzel">Lord 1</span>
+                    <div class="flex items-center gap-1">
+                        <i class="fa-solid fa-coins text-amber-400 text-xs"></i>
+                        <input type="number" id="modalTeam1Score" min="0" class="w-20 bg-[#12141c] border border-slate-700 rounded-lg px-2 py-1 text-center font-bold text-amber-400 focus:outline-none focus:border-amber-500 text-xs">
+                    </div>
+                </div>
+                <div class="flex items-center justify-between bg-[#07080b] p-3 rounded-xl border border-slate-800">
+                    <span id="modalTeam2Name" class="text-xs font-bold text-white truncate max-w-[170px] font-cinzel">Lord 2</span>
+                    <div class="flex items-center gap-1">
+                        <i class="fa-solid fa-coins text-amber-400 text-xs"></i>
+                        <input type="number" id="modalTeam2Score" min="0" class="w-20 bg-[#12141c] border border-slate-700 rounded-lg px-2 py-1 text-center font-bold text-amber-400 focus:outline-none focus:border-amber-500 text-xs">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="closeScoreModal()" class="flex-1 py-2.5 bg-[#1a1d29] hover:bg-[#252938] text-slate-300 font-semibold rounded-xl text-xs transition-all border border-slate-700 font-cinzel">Abort</button>
+                <button onclick="saveScoreModal()" class="flex-1 py-2.5 warhammer-button font-bold rounded-xl text-xs transition-all font-cinzel">Confirm Upkeep</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Box -->
+    <div id="toastNotification" class="fixed bottom-6 left-1/2 -translate-x-1/2 warhammer-panel border border-amber-500/50 text-amber-200 px-4 py-2.5 rounded-xl shadow-2xl text-xs font-semibold z-50 flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 font-cinzel">
+        <i class="fa-solid fa-scroll text-amber-400"></i>
+        <span id="toastMessage">Notification message</span>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        let teamCount = 9;
+        let teams = [];
+        let matches = {};
+        let activeMatchId = null;
+        let selectedTeamImageIndex = null;
+
+        let currentScale = 1.0;
+        let panX = 0;
+        let panY = 0;
+        let isPanning = false;
+        let startX = 0;
+        let startY = 0;
+
+        const defaultPlaceholders = [
+            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="220" viewBox="0 0 120 220"><rect width="120" height="220" fill="%230f1016"/><circle cx="60" cy="80" r="35" fill="%23dc2626" opacity="0.3"/><path d="M60 40 L75 70 L45 70 Z" fill="%23ef4444"/><circle cx="60" cy="80" r="20" fill="%23fca5a5"/><path d="M30 180 C30 130 90 130 90 180 Z" fill="%23991b1b"/><text x="60" y="200" font-family="sans-serif" font-size="9" font-weight="bold" fill="%23fca5a5" text-anchor="middle">KHORNE</text></svg>',
+            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="220" viewBox="0 0 120 220"><rect width="120" height="220" fill="%230f1016"/><circle cx="60" cy="80" r="35" fill="%239333ea" opacity="0.3"/><polygon points="60,35 75,55 95,60 80,75 85,95 60,85 35,95 40,75 25,60 45,55" fill="%23a855f7"/><circle cx="60" cy="80" r="18" fill="%23e9d5ff"/><path d="M25 180 C25 125 95 125 95 180 Z" fill="%236b21a8"/><text x="60" y="200" font-family="sans-serif" font-size="9" font-weight="bold" fill="%23d8b4fe" text-anchor="middle">TZEENTCH</text></svg>',
+            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="220" viewBox="0 0 120 220"><rect width="120" height="220" fill="%230f1016"/><circle cx="60" cy="80" r="35" fill="%2316a34a" opacity="0.3"/><path d="M40 50 L80 50 L70 90 L50 90 Z" fill="%2322c55e"/><circle cx="60" cy="78" r="18" fill="%23bbf7d0"/><path d="M28 180 C28 128 92 128 92 180 Z" fill="%2314532d"/><text x="60" y="200" font-family="sans-serif" font-size="9" font-weight="bold" fill="%2386efac" text-anchor="middle">NURGLE</text></svg>',
+            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="220" viewBox="0 0 120 220"><rect width="120" height="220" fill="%230f1016"/><circle cx="60" cy="80" r="35" fill="%230284c7" opacity="0.3"/><polygon points="60,40 80,80 60,70 40,80" fill="%2338bdf8"/><circle cx="60" cy="80" r="18" fill="%23bae6fd"/><path d="M25 180 C25 120 95 120 95 180 Z" fill="%230369a1"/><text x="60" y="200" font-family="sans-serif" font-size="9" font-weight="bold" fill="%237dd3fc" text-anchor="middle">CATHAY</text></svg>'
+        ];
+
+        window.onload = function() {
+            loadFromLocalStorage();
+            if (!teams || teams.length === 0) {
+                initDefaultFactions(teamCount);
+            }
+            syncSliderWithTeamCount();
+            renderTeamInputs();
+            generateBracket();
+            initPanAndZoom();
+        };
+
+        function syncSliderWithTeamCount() {
+            const slider = document.getElementById('teamSlider');
+            const sliderText = document.getElementById('sliderValueText');
+            const displayCount = document.getElementById('displayTeamCount');
+
+            if (slider) slider.value = teamCount;
+            if (sliderText) sliderText.innerText = `${teamCount} Lords`;
+            if (displayCount) displayCount.innerText = teamCount;
+        }
+
+        function handleSliderInput(val) {
+            const count = parseInt(val) || 2;
+            teamCount = count;
+            syncSliderWithTeamCount();
+
+            if (teams.length < count) {
+                for (let i = teams.length + 1; i <= count; i++) {
+                    teams.push({
+                        name: `Legendary Lord ${i}`,
+                        cost: (i * 150) + 1200,
+                        image: defaultPlaceholders[(i - 1) % defaultPlaceholders.length]
+                    });
+                }
+            } else if (teams.length > count) {
+                teams = teams.slice(0, count);
+            }
+
+            renderTeamInputs();
+            generateBracket();
+            saveToLocalStorage();
+        }
+
+        function autoFillFactions() {
+            initDefaultFactions(teamCount);
+            renderTeamInputs();
+            generateBracket();
+            saveToLocalStorage();
+            showNotification('Armies and Legendary Lords fully replenished!');
+        }
+
+        function shuffleFactions() {
+            for (let i = teams.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [teams[i], teams[j]] = [teams[j], teams[i]];
+            }
+            renderTeamInputs();
+            generateBracket();
+            saveToLocalStorage();
+            showNotification('Armies shuffled successfully!');
+        }
+
+        function renderTeamInputs() {
+            const container = document.getElementById('teamInputContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            teams.forEach((team, index) => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-2 bg-[#07080b] p-2 rounded-xl border border-slate-800 hover:border-amber-500/40 transition-all';
+                item.innerHTML = `
+                    <div class="relative group cursor-pointer flex-shrink-0" onclick="triggerPortraitUpload(${index})" title="Click to change banner portrait">
+                        <div class="w-9 h-12 rounded-lg bg-[#12141c] border border-slate-700 overflow-hidden flex items-center justify-center">
+                            ${team.image ? `<img src="${team.image}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-image text-slate-500 text-xs"></i>`}
+                        </div>
+                        <div class="absolute inset-0 bg-black/60 rounded-lg opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] transition-opacity">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow space-y-1 min-w-0">
+                        <input type="text" value="${escapeHtml(team.name)}" onchange="updateTeamName(${index}, this.value)" placeholder="Lord Name" class="w-full bg-[#12141c] border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-100 font-semibold focus:outline-none focus:border-amber-500 truncate font-cinzel">
+                        <div class="flex items-center gap-1">
+                            <i class="fa-solid fa-coins text-[10px] text-amber-400"></i>
+                            <input type="number" value="${team.cost || 0}" min="0" onchange="updateTeamCost(${index}, this.value)" placeholder="Upkeep" class="w-full bg-[#12141c] border border-slate-800 rounded-lg px-2 py-0.5 text-[11px] font-bold text-amber-400 focus:outline-none focus:border-amber-500">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function triggerPortraitUpload(index) {
+            selectedTeamImageIndex = index;
+            const uploader = document.getElementById('portraitUploader');
+            if (uploader) uploader.click();
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file || selectedTeamImageIndex === null) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (teams[selectedTeamImageIndex]) {
+                    teams[selectedTeamImageIndex].image = e.target.result;
+                    renderTeamInputs();
+                    updateBracketUI();
+                    saveToLocalStorage();
+                    showNotification('Lord portrait updated successfully!');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function getTeamByName(name) {
+            if (!name) return null;
+            return teams.find(t => t.name === name) || null;
+        }
+
+        function updateTeamName(index, newName) {
+            if (teams[index]) {
+                const oldName = teams[index].name;
+                teams[index].name = newName;
+                Object.keys(matches).forEach(mId => {
+                    if (matches[mId].p1 === oldName) matches[mId].p1 = newName;
+                    if (matches[mId].p2 === oldName) matches[mId].p2 = newName;
+                    if (matches[mId].winner === oldName) matches[mId].winner = newName;
+                });
+                updateBracketUI();
+                saveToLocalStorage();
+            }
+        }
+
+        function updateTeamCost(index, newCost) {
+            if (teams[index]) {
+                const costVal = parseInt(newCost) || 0;
+                teams[index].cost = costVal;
+                const teamName = teams[index].name;
+
+                Object.keys(matches).forEach(mId => {
+                    if (matches[mId].p1 === teamName) matches[mId].s1 = costVal;
+                    if (matches[mId].p2 === teamName) matches[mId].s2 = costVal;
+                });
+                updateBracketUI();
+                saveToLocalStorage();
+            }
+        }
+
+        function initDefaultFactions(count) {
+            teamCount = count;
+            teams = [];
+            const factionNames = [
+                "Karl Franz (Empire)", "Supreme Patriarch Gelt", "Miao Ying (Cathay)", "Zhao Ming (Cathay)",
+                "Kroq-Gar (Lizardmen)", "Tyrion (High Elves)", "Malekith (Dark Elves)", "Queek Headtaker (Skaven)",
+                "Karkassos (Khorne)", "Kairos Fateweaver", "Nurgle Rotbloom", "Skarbrand the Exiled",
+                "Archaon Everchosen", "Prince Sigvald", "Be'lakor the Dark Master", "Boris Ursus (Kislev)"
+            ];
+
+            for (let i = 1; i <= count; i++) {
+                let name = factionNames[(i - 1) % factionNames.length];
+                if (i > factionNames.length) name = `Legendary Lord ${i}`;
+                teams.push({ 
+                    name: name, 
+                    cost: (i * 200) + 1000,
+                    image: defaultPlaceholders[(i - 1) % defaultPlaceholders.length] 
+                });
+            }
+        }
+
+        function slotCost(name) {
+            if (!name) return null;
+            if (name.startsWith('Winner') || name === '?') return '-';
+            const t = getTeamByName(name);
+            return t ? t.cost : null;
+        }
+
+        // Custom Sequential Diagram Generator matching exactly the user layout
+        function generateBracket() {
+            const bracketTree = document.getElementById('bracketTree');
+            if (!bracketTree) return;
+            bracketTree.innerHTML = '';
+            matches = {};
+
+            let currentTeams = teams.map(t => t.name);
+            let roundsData = [];
+
+            if (currentTeams.length >= 3 && currentTeams.length % 2 !== 0) {
+                let r1Match = {
+                    id: 'custom_r1_m0',
+                    round: 1,
+                    p1: currentTeams[0],
+                    p2: currentTeams[1],
+                    s1: slotCost(currentTeams[0]),
+                    s2: slotCost(currentTeams[1]),
+                    winner: null
+                };
+                matches[r1Match.id] = r1Match;
+                roundsData.push([r1Match]);
+
+                let remainingTeams = currentTeams.slice(2);
+                remainingTeams.unshift(`Winner ${r1Match.id}`);
+
+                let currentRoundNum = 2;
+                while (remainingTeams.length > 1) {
+                    let roundMatches = [];
+                    for (let i = 0; i < remainingTeams.length; i += 2) {
+                        if (i + 1 < remainingTeams.length) {
+                            let mId = `custom_r${currentRoundNum}_m${roundMatches.length}`;
+                            let matchObj = {
+                                id: mId,
+                                round: currentRoundNum,
+                                p1: remainingTeams[i],
+                                p2: remainingTeams[i+1],
+                                s1: slotCost(remainingTeams[i]),
+                                s2: slotCost(remainingTeams[i+1]),
+                                winner: null
+                            };
+                            matches[mId] = matchObj;
+                            roundMatches.push(matchObj);
+                        }
+                    }
+                    roundsData.push(roundMatches);
+                    remainingTeams = roundMatches.map(m => `Winner ${m.id}`);
+                    currentRoundNum++;
+                }
+            } else {
+                let activeParticipants = [...currentTeams];
+                let currentRound = 1;
+                while (activeParticipants.length > 1) {
+                    let roundMatches = [];
+                    for (let i = 0; i < activeParticipants.length; i += 2) {
+                        if (i + 1 < activeParticipants.length) {
+                            let mId = `std_r${currentRound}_m${roundMatches.length}`;
+                            let matchObj = {
+                                id: mId,
+                                round: currentRound,
+                                p1: activeParticipants[i],
+                                p2: activeParticipants[i+1],
+                                s1: slotCost(activeParticipants[i]),
+                                s2: slotCost(activeParticipants[i+1]),
+                                winner: null
+                            };
+                            matches[mId] = matchObj;
+                            roundMatches.push(matchObj);
+                        }
+                    }
+                    roundsData.push(roundMatches);
+                    activeParticipants = roundMatches.map(m => `Winner ${m.id}`);
+                    currentRound++;
+                }
+            }
+
+            roundsData.forEach((roundMatches, rIdx) => {
+                const roundRow = document.createElement('div');
+                roundRow.className = 'flex flex-col items-center w-full relative';
+
+                const roundHeader = document.createElement('div');
+                if (rIdx === roundsData.length - 1) {
+                    roundHeader.innerHTML = '<i class="fa-solid fa-crown text-amber-400"></i> FINAL BATTLE STAGE <i class="fa-solid fa-crown text-amber-400"></i>';
+                    roundHeader.className = 'text-center font-black text-xs uppercase tracking-wider text-amber-400 mb-4 border-b border-amber-500/30 pb-1.5 w-full max-w-md flex items-center justify-center gap-2 font-cinzel';
+                } else if (rIdx === 0 && currentTeams.length % 2 !== 0) {
+                    roundHeader.innerHTML = '<i class="fa-solid fa-fire text-amber-500"></i> PRELIMINARY SKIRMISH <i class="fa-solid fa-fire text-amber-500"></i>';
+                    roundHeader.className = 'text-center font-black text-xs uppercase tracking-wider text-amber-500 mb-4 border-b border-amber-500/30 pb-1.5 w-full max-w-md flex items-center justify-center gap-2 font-cinzel';
+                } else {
+                    roundHeader.innerText = `ROUND ${rIdx + 1}`;
+                    roundHeader.className = 'text-center font-black text-xs uppercase tracking-wider text-amber-400/80 mb-4 border-b border-slate-800 pb-1.5 w-full max-w-md flex items-center justify-center gap-2 font-cinzel';
+                }
+
+                const matchesContainer = document.createElement('div');
+                matchesContainer.className = 'flex flex-row justify-around items-center w-full gap-12 min-w-max px-4';
+
+                roundMatches.forEach(match => {
+                    matchesContainer.appendChild(createMatchCardUI(match.id));
+                });
+
+                roundRow.appendChild(roundHeader);
+                roundRow.appendChild(matchesContainer);
+                bracketTree.appendChild(roundRow);
+            });
+
+            // Champion Banner Row at the top
+            const winnerRow = document.createElement('div');
+            winnerRow.className = 'flex flex-col justify-center items-center w-full mb-2 relative z-20';
+            winnerRow.innerHTML = `
+                <div class="text-center mb-2 font-black text-xs uppercase tracking-wider text-amber-400 flex items-center gap-2 font-cinzel">
+                    <i class="fa-solid fa-crown text-amber-400 animate-bounce"></i> SUPREME OVERLORD <i class="fa-solid fa-crown text-amber-400 animate-bounce"></i>
+                </div>
+                <div id="championCard" class="w-[130px] warhammer-panel border-2 border-amber-500/60 rounded-xl p-1.5 flex flex-col items-center justify-between text-center relative overflow-hidden shadow-2xl backdrop-blur-md transition-all">
+                    <div id="championImageContainer" class="w-full h-[180px] rounded-lg bg-[#07080b] border border-slate-800 flex items-center justify-center overflow-hidden mb-1.5 shadow-inner relative">
+                        <i class="fa-solid fa-trophy text-amber-400 text-3xl"></i>
+                    </div>
+                    <span id="championCardName" class="text-xs font-black text-amber-300 line-clamp-2 w-full px-0.5 tracking-wide leading-tight min-h-[2rem] flex items-center justify-center font-cinzel">???</span>
+                    <div id="championCardCost" class="text-[10px] font-black bg-[#07080b] text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30 mt-1 flex items-center gap-1 shadow">
+                        <i class="fa-solid fa-coins text-[9px] text-amber-400"></i> <span>-</span>
+                    </div>
+                </div>
+            `;
+            bracketTree.appendChild(winnerRow);
+
+            loadMatchProgress();
+            updateBracketUI();
+            
+            setTimeout(() => {
+                fitWindow();
+            }, 100);
+        }
+
+        function createMatchCardUI(matchId) {
+            const cardWrapper = document.createElement('div');
+            cardWrapper.className = 'match-node-wrapper relative flex-shrink-0';
+
+            const card = document.createElement('div');
+            card.id = `card_${matchId}`;
+            card.className = 'relative warhammer-panel border-2 border-slate-800 rounded-2xl shadow-2xl hover:border-amber-500/60 transition-all flex flex-row items-center p-2.5 gap-2 overflow-hidden group select-none backdrop-blur-md';
+
+            card.innerHTML = `
+                <div id="${matchId}_p1_btn" onclick="selectWinner('${matchId}', 1)" class="w-[125px] bg-[#0c0e14] border border-slate-800 rounded-xl p-1.5 flex flex-col items-center justify-between cursor-pointer hover:bg-amber-600/20 hover:border-amber-500/40 transition-all text-center relative overflow-hidden group/p1">
+                    <div id="${matchId}_p1_img_box" class="w-full h-[180px] rounded-lg bg-[#07080b] border border-slate-800 flex items-center justify-center overflow-hidden mb-1.5 shadow-inner relative">
+                        <i class="fa-solid fa-user text-slate-600 text-2xl"></i>
+                    </div>
+                    <span id="${matchId}_p1_name" class="text-xs font-bold text-slate-200 line-clamp-2 w-full px-0.5 leading-tight min-h-[2rem] flex items-center justify-center font-cinzel">TBD</span>
+                    <div id="${matchId}_p1_score" class="text-[10px] font-black bg-[#07080b] text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30 mt-1 flex items-center gap-1 shadow">
+                        <i class="fa-solid fa-coins text-[9px] text-amber-400"></i> <span>-</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center justify-center px-1 relative z-10">
+                    <span class="text-[10px] font-black uppercase warhammer-button px-2 py-1 rounded-full shadow-lg tracking-wider font-cinzel">VS</span>
+                </div>
+
+                <div id="${matchId}_p2_btn" onclick="selectWinner('${matchId}', 2)" class="w-[125px] bg-[#0c0e14] border border-slate-800 rounded-xl p-1.5 flex flex-col items-center justify-between cursor-pointer hover:bg-amber-600/20 hover:border-amber-500/40 transition-all text-center relative overflow-hidden group/p2">
+                    <div id="${matchId}_p2_img_box" class="w-full h-[180px] rounded-lg bg-[#07080b] border border-slate-800 flex items-center justify-center overflow-hidden mb-1.5 shadow-inner relative">
+                        <i class="fa-solid fa-user text-slate-600 text-2xl"></i>
+                    </div>
+                    <span id="${matchId}_p2_name" class="text-xs font-bold text-slate-200 line-clamp-2 w-full px-0.5 leading-tight min-h-[2rem] flex items-center justify-center font-cinzel">TBD</span>
+                    <div id="${matchId}_p2_score" class="text-[10px] font-black bg-[#07080b] text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30 mt-1 flex items-center gap-1 shadow">
+                        <i class="fa-solid fa-coins text-[9px] text-amber-400"></i> <span>-</span>
+                    </div>
+                </div>
+
+                <button onclick="openScoreModal('${matchId}')" title="Edit Upkeep" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 bg-[#1a1d29] hover:bg-amber-600 text-white w-6 h-6 rounded-lg text-xs transition-all shadow border border-slate-700 flex items-center justify-center z-20">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+            `;
+
+            cardWrapper.appendChild(card);
+            return cardWrapper;
+        }
+
+        function selectWinner(matchId, playerIndex) {
+            const match = matches[matchId];
+            if (!match) return;
+
+            const selectedWinner = playerIndex === 1 ? match.p1 : match.p2;
+            if (!selectedWinner || selectedWinner === 'TBD' || selectedWinner.startsWith('Winner')) {
+                showNotification('Armies are not ready or battle cannot be fought yet!');
+                return;
+            }
+
+            match.winner = selectedWinner;
+            propagateWinnerUpstream(matchId, selectedWinner);
+            updateBracketUI();
+            saveToLocalStorage();
+            drawSvgConnectors();
+        }
+
+        function propagateWinnerUpstream(targetMatchId, winnerName) {
+            const sourcePlaceholder = `Winner ${targetMatchId}`;
+            Object.keys(matches).forEach(mId => {
+                let m = matches[mId];
+                if (m.p1 === sourcePlaceholder) m.p1 = winnerName;
+                if (m.p2 === sourcePlaceholder) m.p2 = winnerName;
+                if (m.winner && m.winner !== m.p1 && m.winner !== m.p2) {
+                    m.winner = null;
+                    propagateWinnerUpstream(mId, null);
+                }
+            });
+        }
+
+        function setChampion(winnerName) {
+            const banner = document.getElementById('championBanner');
+            const champNameEl = document.getElementById('championName');
+            const cardChampNameEl = document.getElementById('championCardName');
+            const cardChampImgEl = document.getElementById('championImageContainer');
+            const cardChampCostEl = document.getElementById('championCardCost');
+
+            if (winnerName && winnerName !== 'TBD' && !winnerName.startsWith('Winner')) {
+                const teamObj = getTeamByName(winnerName);
+                if (banner) banner.classList.remove('hidden'), banner.classList.add('flex');
+                if (champNameEl) champNameEl.innerText = winnerName;
+                if (cardChampNameEl) cardChampNameEl.innerText = winnerName;
+                
+                if (cardChampImgEl) {
+                    if (teamObj && teamObj.image) {
+                        cardChampImgEl.innerHTML = `<img src="${teamObj.image}" class="w-full h-full object-cover">`;
+                    } else {
+                        cardChampImgEl.innerHTML = `<i class="fa-solid fa-trophy text-amber-400 text-3xl"></i>`;
+                    }
+                }
+
+                if (cardChampCostEl) {
+                    const c = teamObj ? teamObj.cost : '-';
+                    cardChampCostEl.innerHTML = `<i class="fa-solid fa-coins text-[9px] text-amber-400"></i> <span>${c}</span>`;
+                }
+            } else {
+                if (banner) banner.classList.add('hidden'), banner.classList.remove('flex');
+                if (cardChampNameEl) cardChampNameEl.innerText = '???';
+                if (cardChampImgEl) cardChampImgEl.innerHTML = `<i class="fa-solid fa-trophy text-amber-400 text-3xl"></i>`;
+                if (cardChampCostEl) cardChampCostEl.innerHTML = `<i class="fa-solid fa-coins text-[9px] text-amber-400"></i> <span>-</span>`;
+            }
+        }
+
+        function updateBracketUI() {
+            let finalWinner = null;
+            let completedMatches = 0;
+            let playableMatches = Object.keys(matches).length;
+
+            let maxRound = 1;
+            Object.keys(matches).forEach(id => {
+                if (matches[id].round > maxRound) maxRound = matches[id].round;
+            });
+
+            Object.keys(matches).forEach(mId => {
+                const match = matches[mId];
+                if (match.winner) completedMatches++;
+
+                const p1NameEl = document.getElementById(`${mId}_p1_name`);
+                const p2NameEl = document.getElementById(`${mId}_p2_name`);
+                const p1ScoreEl = document.getElementById(`${mId}_p1_score`);
+                const p2ScoreEl = document.getElementById(`${mId}_p2_score`);
+
+                const p1ImgBox = document.getElementById(`${mId}_p1_img_box`);
+                const p2ImgBox = document.getElementById(`${mId}_p2_img_box`);
+
+                const p1Btn = document.getElementById(`${mId}_p1_btn`);
+                const p2Btn = document.getElementById(`${mId}_p2_btn`);
+
+                if (p1NameEl) p1NameEl.innerText = match.p1 || 'TBD';
+                if (p2NameEl) p2NameEl.innerText = match.p2 || 'TBD';
+
+                const t1Obj = getTeamByName(match.p1);
+                const t2Obj = getTeamByName(match.p2);
+
+                if (p1ScoreEl) {
+                    const c1 = match.s1 !== null && match.s1 !== '-' ? match.s1 : (t1Obj ? t1Obj.cost : '-');
+                    p1ScoreEl.innerHTML = `<i class="fa-solid fa-coins text-[9px] text-amber-400"></i> <span>${c1}</span>`;
+                }
+                if (p2ScoreEl) {
+                    const c2 = match.s2 !== null && match.s2 !== '-' ? match.s2 : (t2Obj ? t2Obj.cost : '-');
+                    p2ScoreEl.innerHTML = `<i class="fa-solid fa-coins text-[9px] text-amber-400"></i> <span>${c2}</span>`;
+                }
+
+                if (p1ImgBox) {
+                    if (t1Obj && t1Obj.image) {
+                        p1ImgBox.innerHTML = `<img src="${t1Obj.image}" class="w-full h-full object-cover">`;
+                    } else {
+                        p1ImgBox.innerHTML = `<i class="fa-solid fa-user text-slate-600 text-2xl"></i>`;
+                    }
+                }
+
+                if (p2ImgBox) {
+                    if (t2Obj && t2Obj.image) {
+                        p2ImgBox.innerHTML = `<img src="${t2Obj.image}" class="w-full h-full object-cover">`;
+                    } else {
+                        p2ImgBox.innerHTML = `<i class="fa-solid fa-user text-slate-600 text-2xl"></i>`;
+                    }
+                }
+
+                if (p1Btn) {
+                    if (match.winner && match.winner === match.p1) {
+                        p1Btn.className = "w-[125px] bg-gradient-to-b from-amber-600/40 to-amber-950/40 border-2 border-amber-500 rounded-xl p-1.5 flex flex-col items-center justify-between cursor-pointer transition-all text-center relative overflow-hidden shadow-lg shadow-amber-500/20";
+                    } else {
+                        p1Btn.className = "w-[125px] bg-[#0c0e14] border border-slate-800 rounded-xl p-1.5 flex flex-col items-center justify-between cursor-pointer hover:bg-amber-600/20 hover:border-amber-500/40 transition-all text-center relative overflow-hidden";
+                    }
+                }
+
+                if (p2Btn) {
+                    if (match.winner && match.winner === match.p2) {
+                        p2Btn.className = "w-[125px] bg-gradient-to-b from-amber-600/40 to-amber-950/40 border-2 border-amber-500 rounded-xl p-1.5 flex flex-col items-center justify-between cursor-pointer transition-all text-center relative overflow-hidden shadow-lg shadow-amber-500/20";
+                    } else {
+                        p2Btn.className = "w-[125px] bg-[#0c0e14] border border-slate-800 rounded-xl p-1.5 flex flex-col items-center justify-between cursor-pointer hover:bg-amber-600/20 hover:border-amber-500/40 transition-all text-center relative overflow-hidden";
+                    }
+                }
+
+                if (match.round === maxRound && match.winner) {
+                    finalWinner = match.winner;
+                }
+            });
+
+            const totalActualMatches = playableMatches > 0 ? playableMatches : 1;
+            const progressText = document.getElementById('progressText');
+            if (progressText) progressText.innerText = `${completedMatches} / ${totalActualMatches}`;
+            const percentage = Math.min(100, (completedMatches / totalActualMatches) * 100);
+            const progressBar = document.getElementById('progressBar');
+            if (progressBar) progressBar.style.width = `${percentage}%`;
+
+            setChampion(finalWinner);
+            drawSvgConnectors();
+        }
+
+        function drawSvgConnectors() {
+            requestAnimationFrame(() => {
+                const svg = document.getElementById('bracketSvg');
+                const container = document.getElementById('panContainer');
+                if (!svg || !container) return;
+
+                svg.innerHTML = '';
+                const containerRect = container.getBoundingClientRect();
+
+                Object.keys(matches).forEach(mId => {
+                    const match = matches[mId];
+                    const cardEl = document.getElementById(`card_${mId}`);
+                    if (!cardEl) return;
+
+                    const cardRect = cardEl.getBoundingClientRect();
+                    const startX = (cardRect.left + cardRect.width / 2 - containerRect.left) / currentScale;
+                    const startY = (cardRect.top - containerRect.top) / currentScale;
+
+                    let targetMatchId = null;
+                    Object.keys(matches).forEach(otherId => {
+                        let other = matches[otherId];
+                        if (other.p1 === `Winner ${mId}` || other.p2 === `Winner ${mId}`) {
+                            targetMatchId = otherId;
+                        }
+                    });
+
+                    if (targetMatchId) {
+                        const targetCard = document.getElementById(`card_${targetMatchId}`);
+                        if (targetCard) {
+                            const targetRect = targetCard.getBoundingClientRect();
+                            const endX = (targetRect.left + targetRect.width / 2 - containerRect.left) / currentScale;
+                            const endY = (targetRect.bottom - containerRect.top) / currentScale;
+
+                            const midY = startY - (startY - endY) / 2;
+                            const d = `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`;
+
+                            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                            path.setAttribute('d', d);
+                            if (match.winner) {
+                                path.setAttribute('class', 'line-active');
+                                path.setAttribute('stroke', '#d4af37');
+                                path.setAttribute('stroke-width', '3.5');
+                            } else {
+                                path.setAttribute('stroke', '#2a2e3d');
+                                path.setAttribute('stroke-width', '2');
+                                path.setAttribute('stroke-dasharray', '4 4');
+                            }
+                            path.setAttribute('fill', 'none');
+                            svg.appendChild(path);
+                        }
+                    } else {
+                        let maxRound = 1;
+                        Object.keys(matches).forEach(id => {
+                            if (matches[id].round > maxRound) maxRound = matches[id].round;
+                        });
+
+                        if (match.round === maxRound) {
+                            const championCard = document.getElementById('championCard');
+                            if (championCard) {
+                                const champRect = championCard.getBoundingClientRect();
+                                const endX = (champRect.left + champRect.width / 2 - containerRect.left) / currentScale;
+                                const endY = (champRect.bottom - containerRect.top) / currentScale;
+
+                                const midY = startY - (startY - endY) / 2;
+                                const d = `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`;
+
+                                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                                path.setAttribute('d', d);
+                                if (match.winner) {
+                                    path.setAttribute('class', 'line-champion');
+                                    path.setAttribute('stroke', '#ef4444');
+                                    path.setAttribute('stroke-width', '4');
+                                } else {
+                                    path.setAttribute('stroke', '#2a2e3d');
+                                    path.setAttribute('stroke-width', '2');
+                                    path.setAttribute('stroke-dasharray', '4 4');
+                                }
+                                path.setAttribute('fill', 'none');
+                                svg.appendChild(path);
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        function initPanAndZoom() {
+            const viewport = document.getElementById('bracketViewport');
+            const container = document.getElementById('panContainer');
+            if (!viewport || !container) return;
+
+            viewport.addEventListener('mousedown', (e) => {
+                if (e.target.closest('#scoreModal') || e.target.closest('#viewControls')) return;
+                isPanning = true;
+                startX = e.clientX - panX;
+                startY = e.clientY - panY;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isPanning) return;
+                panX = e.clientX - startX;
+                panY = e.clientY - startY;
+                applyTransform();
+            });
+
+            window.addEventListener('mouseup', () => {
+                isPanning = false;
+            });
+
+            viewport.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+                zoomBracketByFactor(zoomFactor);
+            }, { passive: false });
+        }
+
+        function zoomBracket(delta) {
+            currentScale = Math.min(Math.max(0.3, currentScale + delta), 2.5);
+            applyTransform();
+        }
+
+        function zoomBracketByFactor(factor) {
+            currentScale = Math.min(Math.max(0.3, currentScale * factor), 2.5);
+            applyTransform();
+        }
+
+        function fitWindow() {
+            const viewport = document.getElementById('bracketViewport');
+            const container = document.getElementById('panContainer');
+            if (!viewport || !container) return;
+
+            const vpWidth = viewport.clientWidth;
+            const vpHeight = viewport.clientHeight;
+            const contentWidth = container.scrollWidth;
+            const contentHeight = container.scrollHeight;
+
+            if (contentWidth > 0 && contentHeight > 0) {
+                const scaleX = (vpWidth - 60) / contentWidth;
+                const scaleY = (vpHeight - 60) / contentHeight;
+                currentScale = Math.min(Math.max(0.25, Math.min(scaleX, scaleY)), 1.1);
+                panX = 0;
+                panY = 0;
+                applyTransform();
+            }
+        }
+
+        function applyTransform() {
+            const container = document.getElementById('panContainer');
+            if (container) {
+                container.style.transform = `translate(${panX}px, ${panY}px) scale(${currentScale})`;
+                drawSvgConnectors();
+            }
+        }
+
+        function openScoreModal(matchId) {
+            activeMatchId = matchId;
+            const match = matches[matchId];
+            if (!match.p1 || !match.p2 || match.p1 === 'TBD' || match.p2 === 'TBD') {
+                showNotification('Both Legendary Lords must be ready first!');
+                return;
+            }
+
+            const t1Obj = getTeamByName(match.p1);
+            const t2Obj = getTeamByName(match.p2);
+
+            document.getElementById('modalTeam1Name').innerText = match.p1;
+            document.getElementById('modalTeam2Name').innerText = match.p2;
+
+            document.getElementById('modalTeam1Score').value = match.s1 !== null && match.s1 !== '-' ? match.s1 : (t1Obj ? t1Obj.cost : 1200);
+            document.getElementById('modalTeam2Score').value = match.s2 !== null && match.s2 !== '-' ? match.s2 : (t2Obj ? t2Obj.cost : 1200);
+
+            const modal = document.getElementById('scoreModal');
+            const modalCard = document.getElementById('modalCard');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalCard.classList.remove('scale-95');
+                modalCard.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeScoreModal() {
+            const modal = document.getElementById('scoreModal');
+            const modalCard = document.getElementById('modalCard');
+            modalCard.classList.remove('scale-100');
+            modalCard.classList.add('scale-95');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function saveScoreModal() {
+            if (!activeMatchId) return;
+            const match = matches[activeMatchId];
+
+            const c1 = parseInt(document.getElementById('modalTeam1Score').value) || 0;
+            const c2 = parseInt(document.getElementById('modalTeam2Score').value) || 0;
+
+            match.s1 = c1;
+            match.s2 = c2;
+
+            const t1Obj = getTeamByName(match.p1);
+            const t2Obj = getTeamByName(match.p2);
+            if (t1Obj) t1Obj.cost = c1;
+            if (t2Obj) t2Obj.cost = c2;
+
+            renderTeamInputs();
+            updateBracketUI();
+            saveToLocalStorage();
+            drawSvgConnectors();
+            closeScoreModal();
+        }
+
+        function resetTournament() {
+            generateBracket();
+            saveToLocalStorage();
+            showNotification('Grand tournament reset successfully!');
+        }
+
+        function showNotification(msg) {
+            const toast = document.getElementById('toastNotification');
+            const toastMsg = document.getElementById('toastMessage');
+            if (!toast || !toastMsg) return;
+
+            toastMsg.innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+
+        function saveToLocalStorage() {
+            const titleDisplay = document.getElementById('displayTournamentTitle');
+            const state = {
+                title: titleDisplay ? titleDisplay.innerText : 'Total War Tournament',
+                teamCount: teamCount,
+                teams: teams,
+                matches: matches
+            };
+            localStorage.setItem('tww3_bracket_master_data_v1', JSON.stringify(state));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('tww3_bracket_master_data_v1');
+            if (saved) {
+                try {
+                    const state = JSON.parse(saved);
+                    if (state.title) {
+                        const displayTitle = document.getElementById('displayTournamentTitle');
+                        if (displayTitle) displayTitle.innerText = state.title;
+                    }
+                    if (state.teamCount) {
+                        teamCount = state.teamCount;
+                        const displayCount = document.getElementById('displayTeamCount');
+                        if (displayCount) displayCount.innerText = teamCount;
+                    }
+                    if (state.teams) teams = state.teams;
+                } catch (e) {
+                    console.error('Failed to load storage', e);
+                }
+            }
+        }
+
+        function loadMatchProgress() {
+            const saved = localStorage.getItem('tww3_bracket_master_data_v1');
+            if (saved) {
+                try {
+                    const state = JSON.parse(saved);
+                    if (state.matches && state.teamCount === teamCount) {
+                        Object.keys(state.matches).forEach(mId => {
+                            if (matches[mId]) {
+                                matches[mId].s1 = state.matches[mId].s1;
+                                matches[mId].s2 = state.matches[mId].s2;
+                                matches[mId].winner = state.matches[mId].winner;
+                                if (state.matches[mId].p1) matches[mId].p1 = state.matches[mId].p1;
+                                if (state.matches[mId].p2) matches[mId].p2 = state.matches[mId].p2;
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error('Failed to load match progress', e);
+                }
+            }
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
